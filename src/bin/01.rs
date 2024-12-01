@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{BinaryHeap, HashMap};
 
 advent_of_code::solution!(1);
 
-pub fn parse(input: &str) -> impl IntoIterator<Item = (u32, u32)> + '_ {
+pub(crate) fn parse(input: &str) -> impl Iterator<Item = (u32, u32)> + '_ {
     input.lines().map(|l| l.split_once("   ")).map(|maybe| {
         maybe
             .map(|(l, r)| {
@@ -15,11 +15,9 @@ pub fn parse(input: &str) -> impl IntoIterator<Item = (u32, u32)> + '_ {
     })
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
-    let (mut left, mut right) = parse(input).into_iter().collect::<(Vec<u32>, Vec<u32>)>();
-
-    left.sort_unstable();
-    right.sort_unstable();
+    let (left, right) = parse(input).collect::<(BinaryHeap<u32>, BinaryHeap<u32>)>();
 
     Some(
         left.into_iter()
@@ -28,9 +26,10 @@ pub fn part_one(input: &str) -> Option<u32> {
     )
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     let mut occurrences = HashMap::new();
-    let (left, right): (Vec<_>, Vec<_>) = parse(input).into_iter().unzip();
+    let (left, right): (Vec<_>, Vec<_>) = parse(input).unzip();
 
     for right in right {
         occurrences
