@@ -1,11 +1,19 @@
 advent_of_code::solution!(%DAY_NUMBER%);
 
-pub fn part_one(input: &str) -> Option<u32> {
-    None
+pub(crate) fn parse_%DAY_NUMBER%(input: &str) -> impl Iterator<Item = _> + '_ {
+    todo!()
 }
 
+#[must_use]
+pub fn part_one(input: &str) -> Option<u32> {
+    let x = parse_%DAY_NUMBER%(input);
+    todo!()
+}
+
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let x = parse_%DAY_NUMBER%(input);
+    todo!()
 }
 
 #[cfg(test)]
