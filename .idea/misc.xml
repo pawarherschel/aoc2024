@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectInspectionProfilesVisibleTreeState">
+    <entry key="Project Default">
+      <profile-state>
+        <expanded-state>
+          <State />
+          <State>
+            <id>LintsRust</id>
+          </State>
+          <State>
+            <id>Naming conventionsLintsRust</id>
+          </State>
+          <State>
+            <id>Rust</id>
+          </State>
+        </expanded-state>
+        <selected-state>
+          <State>
+            <id>CSV</id>
+          </State>
+        </selected-state>
+      </profile-state>
+    </entry>
+  </component>
+  <component name="TestsVcsConfig">
+    <option name="enabled" value="true" />
+  </component>
+</project>
