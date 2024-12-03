@@ -1,10 +1,10 @@
 advent_of_code::solution!(2);
 
-pub(crate) fn parse_2(input: &str) -> impl Iterator<Item = Vec<i32>> + '_ {
+pub(crate) fn parse_2(input: &str) -> impl Iterator<Item = Vec<(usize, i32)>> + '_ {
     input
         .lines()
         .map(|l| l.split_whitespace())
-        .map(|s| s.map(|x| x.parse::<i32>().unwrap()))
+        .map(|s| s.map(|x| x.parse::<i32>().unwrap()).enumerate())
         .map(Iterator::collect)
 }
 
@@ -19,28 +19,45 @@ pub(crate) fn parse_2(input: &str) -> impl Iterator<Item = Vec<i32>> + '_ {
 // 8 6 4 4 1: Unsafe because 4 4 is neither an increase or a decrease.
 // 1 3 6 7 9: Safe because the levels are all increasing by 1, 2, or 3.
 // So, in this example, *2* reports are safe.
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+#[derive(Eq, Copy, Clone, Debug)]
 enum Variant {
-    Inc,
-    Dec,
-    Same,
-    Invalid,
+    Inc((usize, i32), (usize, i32)),
+    Dec((usize, i32), (usize, i32)),
+    Same(usize, usize, i32),
+    Invalid((usize, i32), (usize, i32)),
     Start,
 }
 
-fn map_inc_dec(ns: &[i32]) -> impl Iterator<Item = Variant> + '_ {
+impl PartialEq for Variant {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::Inc(..), Self::Inc(..))
+                | (Self::Dec(..), Self::Dec(..))
+                | (Self::Same(..), Self::Same(..))
+                | (Self::Invalid(..), Self::Invalid(..))
+                | (Self::Start, Self::Start)
+        )
+    }
+}
+
+type NS = [(usize, i32)];
+
+fn map_inc_dec(ns: &NS) -> impl Iterator<Item = Variant> + '_ {
     ns.windows(2).map(|x| {
-        let &[a, b] = x else { unreachable!() };
+        let &[(idx, a), (jdx, b)] = x else {
+            unreachable!()
+        };
         match a - b {
-            0 => Variant::Same,
-            x if 0 < x && x < 4 => Variant::Dec,
-            x if -4 < x && x < 0 => Variant::Inc,
-            _ => Variant::Invalid,
+            0 => Variant::Same(idx, jdx, a),
+            x if 0 < x && x < 4 => Variant::Dec((idx, a), (jdx, b)),
+            x if -4 < x && x < 0 => Variant::Inc((idx, a), (jdx, b)),
+            _ => Variant::Invalid((idx, a), (jdx, b)),
         }
     })
 }
 
-fn safe_numbers_1(ns: &[i32]) -> bool {
+fn safe_numbers_1(ns: &NS) -> bool {
     map_inc_dec(ns)
         .try_fold(Variant::Start, validate_pair)
         .is_some()
@@ -49,7 +66,7 @@ fn safe_numbers_1(ns: &[i32]) -> bool {
 fn validate_pair(acc: Variant, curr: Variant) -> Option<Variant> {
     match (acc, curr) {
         (Variant::Start, x) => Some(x),
-        (_, Variant::Same) | (Variant::Same, _) => None,
+        (_, Variant::Same(..)) | (Variant::Same(..), _) => None,
         (x, y) if x == y => Some(x),
         _other => None,
     }
@@ -69,7 +86,7 @@ pub fn part_one(input: &str) -> Option<usize> {
 //
 // Thanks to the Problem Dampener, `4` reports are actually *safe*!
 
-fn safe_numbers_2(ns: &[i32]) -> bool {
+fn safe_numbers_2(ns: &NS) -> bool {
     todo!()
     // let mut x = map_inc_dec(ns).collect::<Vec<_>>();
     // let mut deviations = 0;
