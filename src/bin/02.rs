@@ -19,13 +19,43 @@ pub(crate) fn parse_2(input: &str) -> impl Iterator<Item = Vec<(usize, i32)>> + 
 // 8 6 4 4 1: Unsafe because 4 4 is neither an increase or a decrease.
 // 1 3 6 7 9: Safe because the levels are all increasing by 1, 2, or 3.
 // So, in this example, *2* reports are safe.
-#[derive(Eq, Copy, Clone, Debug)]
+#[allow(clippy::derived_hash_with_manual_eq)]
+#[derive(Eq, Copy, Clone, Debug, Hash)]
 enum Variant {
     Inc((usize, i32), (usize, i32)),
     Dec((usize, i32), (usize, i32)),
     Same(usize, usize, i32),
-    Invalid((usize, i32), (usize, i32)),
+    InvalidInc((usize, i32), (usize, i32)),
+    InvalidDec((usize, i32), (usize, i32)),
     Start,
+}
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
+enum VariantMarker {
+    Inc,
+    Dec,
+    Same,
+    InvalidInc,
+    InvalidDec,
+    Start,
+}
+
+impl Variant {
+    fn marker(&self) -> VariantMarker {
+        (*self).into()
+    }
+}
+
+impl From<Variant> for VariantMarker {
+    fn from(value: Variant) -> Self {
+        match value {
+            Variant::Inc(_, _) => Self::Inc,
+            Variant::Dec(_, _) => Self::Dec,
+            Variant::Same(_, _, _) => Self::Same,
+            Variant::InvalidInc(_, _) => Self::InvalidInc,
+            Variant::InvalidDec(_, _) => Self::InvalidDec,
+            Variant::Start => Self::Start,
+        }
+    }
 }
 
 impl PartialEq for Variant {
@@ -35,7 +65,8 @@ impl PartialEq for Variant {
             (Self::Inc(..), Self::Inc(..))
                 | (Self::Dec(..), Self::Dec(..))
                 | (Self::Same(..), Self::Same(..))
-                | (Self::Invalid(..), Self::Invalid(..))
+                | (Self::InvalidInc(..), Self::InvalidInc(..))
+                | (Self::InvalidDec(..), Self::InvalidDec(..))
                 | (Self::Start, Self::Start)
         )
     }
@@ -48,11 +79,13 @@ fn map_inc_dec(ns: &NS) -> impl Iterator<Item = Variant> + '_ {
         let &[(idx, a), (jdx, b)] = x else {
             unreachable!()
         };
-        match a - b {
+        match b - a {
             0 => Variant::Same(idx, jdx, a),
-            x if 0 < x && x < 4 => Variant::Dec((idx, a), (jdx, b)),
-            x if -4 < x && x < 0 => Variant::Inc((idx, a), (jdx, b)),
-            _ => Variant::Invalid((idx, a), (jdx, b)),
+            x if 0 < x && x < 4 => Variant::Inc((idx, a), (jdx, b)),
+            x if -4 < x && x < 0 => Variant::Dec((idx, a), (jdx, b)),
+            x if x.is_positive() => Variant::InvalidInc((idx, a), (jdx, b)),
+            x if x.is_negative() => Variant::InvalidDec((idx, a), (jdx, b)),
+            _ => unreachable!(),
         }
     })
 }
@@ -85,107 +118,40 @@ pub fn part_one(input: &str) -> Option<usize> {
 // - `1 3 6 7 9`: *Safe* without removing any level.
 //
 // Thanks to the Problem Dampener, `4` reports are actually *safe*!
-
+#[allow(clippy::too_many_lines)]
 fn safe_numbers_2(ns: &NS) -> bool {
-    todo!()
-    // let mut x = map_inc_dec(ns).collect::<Vec<_>>();
-    // let mut deviations = 0;
-    //
-    // let idx = x.windows(3).enumerate().find(|(idx, x)| {
-    //     let &&[a, b, c] = x else { unreachable!() };
-    //     (a == b && b != c) || (a != b && b == c) || (a == c && b != c)
+    false
+    // let ns_variant = map_inc_dec(ns).collect::<Vec<_>>();
+    // let no_removal_required = ns_variant.windows(2).any(|it| {
+    //     let &[a, b] = it else { unreachable!() };
+    //     validate_pair(a, b).is_some()
     // });
     //
-    // println!("idx: {idx:?}");
-    //
-    // if idx.is_none() {
+    // if no_removal_required {
     //     return true;
     // }
     //
-    // let (idx, &[a, b, c]) = idx.unwrap() else {
-    //     unreachable!()
-    // };
-    // println!("idx={idx}");
-    //
-    // let base = 3 * (idx.saturating_sub(1));
-    // println!("base={base}");
-    // let problematic_idx = match (a, b, c) {
-    //     // c
-    //     (a, b, c) if a == b && b != c => 2,
-    //     // a
-    //     (a, b, c) if a != b && b == c => 0,
-    //     // b
-    //     (a, b, c) if a == c && b != c => 1,
-    //     _ => unreachable!(),
-    // };
-    // println!("problematic_idx={problematic_idx}");
-    //
-    // let idx = base + problematic_idx;
-    // println!("idx={idx}");
-    // let ns = ns[..idx]
-    //     .iter()
-    //     .chain(ns[(idx + 1)..].iter())
-    //     .collect::<Vec<_>>();
-    //
-    // ns.windows(3).any(|x| {
-    //     let &[a, b, c] = x else { unreachable!() };
-    //     (a == b && b != c) || (a != b && b == c) || (a == c && b != c)
-    // })
-
-    // let &[a, b, c] = idx.unwrap();
-
-    // for window in x.windows(3) {
-    //     let &[a, b, c] = window else { unreachable!() };
-    //     println!("{a:?} {b:?} {c:?}");
-    //     match (a, b, c) {
-    //         (a, b, c) if a == b && b == c => {}
-    //         (a, b, c) if (a == b && b != c) || (a != b && b == c) | (a == c && b != c) => {
-    //             deviations += 1
-    //         }
-    //         other => {
-    //             println!("other: {other:?}")
-    //         }
-    //     }
-    // }
-
-    // deviations <= 2
-    // x.windows(3)
-    //     .fold((0, None), |(acc, prev), x| {
-    //         let &[a, b, c] = x else { unreachable!() };
-    //         println!("{a:?} {b:?} {c:?}");
-    //         match (a, b, c) {
-    //             (Variant::Start, a, b) => panic!("how?"),
-    //             // `a` outlier
-    //             (a, b, c) if a != b && b == c && b != Variant::Same => (acc + 1, Some(b)),
-    //             // `b` outlier
-    //             (a, b, c) if a != b && a == c && a != Variant::Same => (acc + 1, Some(a)),
-    //             // `c` outlier
-    //             (a, b, c) if a == b && b != c && a != Variant::Same => (acc + 1, Some(a)),
-    //             (a, b, c) if a == b && b == c => (acc, Some(a)),
-    //             others => {
-    //                 dbg!(others);
-    //                 (acc + 1, None)
-    //             }
-    //         }
+    // let ans = (0..ns.len())
+    //     .map(|idx| {
+    //         ns[..idx]
+    //             .iter()
+    //             .copied()
+    //             .chain(ns[(idx + 1)..].iter().copied())
+    //             .collect::<Vec<_>>()
     //     })
-    //     .0
-    //     <= 2
-    // // .inspect(|x| println!("{x:?}"))
-    // .filter(Option::is_none)
-    // .count()
-    // <= 1
+    //     .any(|new_ns| {
+    //         assert_eq!(ns.len(), new_ns.len() + 1);
+    //         println!("{new_ns:?}");
+    //         dbg!(safe_numbers_1(&new_ns))
+    //     });
+    // println!("{:-<16}", ans);
+    //
+    // ans
 }
 
 #[must_use]
 pub fn part_two(input: &str) -> Option<usize> {
-    Some(
-        parse_2(input)
-            .filter(|nums| {
-                println!("{nums:?}");
-                dbg!(safe_numbers_2(nums))
-            })
-            .count(),
-    )
+    Some(parse_2(input).filter(|nums| safe_numbers_2(nums)).count())
 }
 
 #[cfg(test)]
